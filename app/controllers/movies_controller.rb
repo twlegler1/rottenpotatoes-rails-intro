@@ -1,5 +1,9 @@
 class MoviesController < ApplicationController
 
+  def movieParams
+    params.require(:movie).permit(:title, :rating, :description, :release_date)
+  end
+  
   def show
     id = params[:id] # retrieve movie ID from URI route
     @movie = Movie.find(id) # look up movie by unique ID
@@ -7,13 +11,19 @@ class MoviesController < ApplicationController
   end
 
   def index
-   if (params[:sort] == "movie")
-      @movies = Movie.all.order(:title)
+    @all_ratings = Movie.all_ratings
+    if (!params[:ratings].nil?)
+       Movie.checked_ratings = params[:ratings].keys
+    end
+     @ratingCheck = Movie.checked_ratings
+     @showMovies = Movie.where({ rating: @ratingCheck})
+    if (params[:sort] == "movie")
+      @movies = @showMovies.order(:title)
     elsif (params[:sort] == "release")
-      @movies = Movie.all.order(:release_date)
+      @movies = @showMovies.order(:release_date)
     else
-      @movies = Movie.all
-   end
+      @movies = @showMovies
+    end
   end
 
   def new
@@ -21,7 +31,7 @@ class MoviesController < ApplicationController
   end
 
   def create
-    @movie = Movie.create!(params[:movie])
+    @movie = Movie.create!(params[movieParams])
     flash[:notice] = "#{@movie.title} was successfully created."
     redirect_to movies_path
   end
@@ -32,7 +42,7 @@ class MoviesController < ApplicationController
 
   def update
     @movie = Movie.find params[:id]
-    @movie.update_attributes!(params[:movie])
+    @movie.update_attributes!(movieParams)
     flash[:notice] = "#{@movie.title} was successfully updated."
     redirect_to movie_path(@movie)
   end
